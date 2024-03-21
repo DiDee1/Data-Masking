@@ -1,0 +1,23 @@
+rule "test"
+when
+    has_field("message") // Checks if the message field exists
+then
+    let originmsg = to_string($message.message); // Convert the message field to string and store it in originmsg
+
+    // Replace specific patterns in the message to anonymize phone numbers
+    let convertednum = regex_replace("(\\d{2})\\d{8}+(\\d{3})" , originmsg , "$1XXXXXXXX$2");
+
+    // Further anonymize phone numbers with a different pattern(my country code)
+    let convertednum1 = regex_replace("(?:09|95)\\d{5}+(\\d{2})", convertednum, "09xxxxx$1");
+
+    // Replace names with asterisks and preserve the comma at the end
+    let convertedname = regex_replace("(?:name|Name)([^,\n]+),", convertednum1, "name=*****,");
+    
+    // Correctly handle names followed by double quotes
+    let convertedname1 = regex_replace("(?:name|Name)([^\n]+)\"", convertedname, "name= \"*****\"");
+
+    // Replace email addresses with asterisks
+    let convertedemail = regex_replace("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}", convertedname, "*****@*****.***,");
+
+    set_field("message", convertedemail); // Set the message field with the anonymized content
+end
